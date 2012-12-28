@@ -17,11 +17,6 @@ __global__ void jacobiMethod(float* coal, float* x, float* b, int col, int num);
 float* solveSystem(float* A_d, float* b_d, int splines, int col) {
    float *x_d, *x = (float *) calloc(splines * col, sizeof(float));
    int numA = col * col;
-   /*testing float *A = (float *) malloc(numA * sizeof(float)), 
-   testing  *b = (float *) malloc(splines * col * sizeof(float));
-
-   cudaMemcpy(A, A_d, numA * sizeof(float), cudaMemcpyDeviceToHost);
-   cudaMemcpy(b, b_d, splines * col * sizeof(float), cudaMemcpyDeviceToHost);*/
 
    // Malloc space on the card.
    cudaMalloc((void**)&x_d, splines * col * sizeof(float));
