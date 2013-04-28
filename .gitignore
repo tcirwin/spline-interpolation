@@ -1,2 +1,4 @@
 splinetest
 tests/test_generate
+tests/*.myout
+bin/*

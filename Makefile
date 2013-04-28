@@ -16,10 +16,10 @@ OUT_COBJ = $(addprefix $(OUT_DIR)/,$(COBJ))
 
 all: splinetest
 	
-splinetest: $(OUT_CUOBJ) $(OUT_COBJ)
+splinetest: bin $(OUT_CUOBJ) $(OUT_COBJ)
 	$(NVCC) $(LINKFLAGS) $(OUT_CUOBJ) $(OUT_COBJ) -o splinetest
 
-objects: $(CUOBJ)
+objects: bin $(CUOBJ)
 	echo
 	
 $(OUT_DIR)/%.obj: $(IN_DIR)/%.cu
@@ -27,6 +27,9 @@ $(OUT_DIR)/%.obj: $(IN_DIR)/%.cu
 
 $(OUT_DIR)/%.o: $(IN_DIR)/%.cpp
 	$(GCC) $(GCCFLAGS) -c $< -o $@
+
+bin:
+	mkdir bin
 	
 clean:
 	rm bin/*.o bin/*.obj splinetest
