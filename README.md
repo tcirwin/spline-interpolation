@@ -1,10 +1,10 @@
 USAGE
 =====
-`make`
+ - Compile: `make`
 
  - Plotting Splines: `./windowtest < [data file]`
  - Write Spline Points to Console: `./splinetest < [data file]`
- - Sample data files available in `/tests`.
+ - Sample data files available: `/tests/*.in`.
 
 
 
