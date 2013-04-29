@@ -1,0 +1,15 @@
+#include <GL/glut.h>
+#include "../process_curve.h"
+
+void processCurve(int set, int numPoints, int res, Point* vals) {
+   for(int dimPos = 0; dimPos < numPoints - 2; dimPos++){
+      for (int i = 0; i < res; i++) {
+         if (i != res - 1) {
+            glBegin(GL_LINES);
+               glVertex3f(vals[dimPos * res + i].x, vals[dimPos * res + i].y, 1);
+               glVertex3f(vals[dimPos * res + i + 1].x, vals[dimPos * res + i + 1].y, 1);
+            glEnd();
+         }
+      }
+   }
+}
