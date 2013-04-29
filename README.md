@@ -1,3 +1,13 @@
+USAGE
+=====
+`make`
+
+ - Plotting Splines: `./windowtest < [data file]`
+ - Write Spline Points to Console: `./splinetest < [data file]`
+ - Sample data files available in `/tests`.
+
+
+
 Spline Interpolation
 ====================
 Uses the Jacobi method to calculate natural cubic splines for each set of points given, then calculates the specified number of intermediate points using the resolution given. Computes only a specified number of iterations of the Jacobi method, since checking for convergence is much more difficult and relatively unnecessary (see solve_system.cu).
