@@ -5,6 +5,8 @@
 using namespace std;
 
 void processCurve(int set, int numPoints, int res, Point* vals) {
+   glColor3f(rand() % 100 / 100.0, rand() % 100 / 100.0, rand() % 100 / 100.0);
+
    for(int dimPos = 0; dimPos < numPoints - 2; dimPos++){
       for (int i = 0; i < res; i++) {
          glBegin(GL_LINES);
