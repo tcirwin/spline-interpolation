@@ -16,12 +16,19 @@ OUT_COBJ = $(addprefix $(OUT_DIR)/,$(COBJ))
 OUT_COBJ_W = $(addprefix $(OUT_DIR)/,$(COBJ_W))
 
 all: splinetest windowtest
-	
+osx: splinetest windowtest_osx
+
 splinetest: $(OUT_DIR) $(OUT_CUOBJ) $(OUT_COBJ)
 	$(NVCC) $(LINKFLAGS) $(OUT_CUOBJ) $(OUT_COBJ) -o splinetest
 
 windowtest: $(OUT_DIR) $(OUT_OPENGL_DIR) $(OUT_CUOBJ) $(OUT_COBJ_W)
 	$(NVCC) $(LINKFLAGS) $(OUT_CUOBJ) $(OUT_COBJ_W) -lGL -lGLU -lglut -o windowtest
+
+windowtest_osx: glut $(OUT_DIR) $(OUT_OPENGL_DIR) $(OUT_CUOBJ) $(OUT_COBJ_W)
+	$(NVCC) $(LINKFLAGS) $(OUT_DIR)/GLUT.o $(OUT_CUOBJ) $(OUT_COBJ_W) -L/System/Library/Frameworks/OpenGL.framework/Libraries -lGL -lGLU -o windowtest
+
+glut:
+	cp /System/Library/Frameworks/GLUT.framework/GLUT $(OUT_DIR)/GLUT.o
 
 objects: $(OUT_DIR) $(CUOBJ)
 	echo
