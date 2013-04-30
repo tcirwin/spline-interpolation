@@ -24,11 +24,8 @@ splinetest: $(OUT_DIR) $(OUT_CUOBJ) $(OUT_COBJ)
 windowtest: $(OUT_DIR) $(OUT_OPENGL_DIR) $(OUT_CUOBJ) $(OUT_COBJ_W)
 	$(NVCC) $(LINKFLAGS) $(OUT_CUOBJ) $(OUT_COBJ_W) -lGL -lGLU -lglut -o windowtest
 
-windowtest_osx: glut $(OUT_DIR) $(OUT_OPENGL_DIR) $(OUT_CUOBJ) $(OUT_COBJ_W)
-	$(NVCC) $(LINKFLAGS) $(OUT_DIR)/GLUT.o $(OUT_CUOBJ) $(OUT_COBJ_W) -L/System/Library/Frameworks/OpenGL.framework/Libraries -lGL -lGLU -o windowtest
-
-glut:
-	cp /System/Library/Frameworks/GLUT.framework/GLUT $(OUT_DIR)/GLUT.o
+windowtest_osx: $(OUT_DIR) $(OUT_OPENGL_DIR) $(OUT_CUOBJ) $(OUT_COBJ_W)
+	$(NVCC) $(LINKFLAGS) $(OUT_CUOBJ) $(OUT_COBJ_W) -Xlinker -framework,OpenGL,-framework,GLUT -o windowtest
 
 objects: $(OUT_DIR) $(CUOBJ)
 	echo
