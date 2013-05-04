@@ -16,12 +16,16 @@ OUT_COBJ = $(addprefix $(OUT_DIR)/,$(COBJ))
 OUT_COBJ_W = $(addprefix $(OUT_DIR)/,$(COBJ_W))
 
 all: splinetest windowtest
-	
+osx: splinetest windowtest_osx
+
 splinetest: $(OUT_DIR) $(OUT_CUOBJ) $(OUT_COBJ)
 	$(NVCC) $(LINKFLAGS) $(OUT_CUOBJ) $(OUT_COBJ) -o splinetest
 
 windowtest: $(OUT_DIR) $(OUT_OPENGL_DIR) $(OUT_CUOBJ) $(OUT_COBJ_W)
 	$(NVCC) $(LINKFLAGS) $(OUT_CUOBJ) $(OUT_COBJ_W) -lGL -lGLU -lglut -o windowtest
+
+windowtest_osx: $(OUT_DIR) $(OUT_OPENGL_DIR) $(OUT_CUOBJ) $(OUT_COBJ_W)
+	$(NVCC) $(LINKFLAGS) $(OUT_CUOBJ) $(OUT_COBJ_W) -Xlinker -framework,OpenGL,-framework,GLUT -o windowtest
 
 objects: $(OUT_DIR) $(CUOBJ)
 	echo

@@ -6,6 +6,9 @@ USAGE
  - Write Spline Points to Console: `./splinetest < [data file]`
  - Sample data files available: `/tests/*.in`.
 
+If you're on Mac OS X...
+------------------------
+Use `make osx` or `make windowtest_osx`. OpenGL and GLUT libs are not in /usr/lib on OS X.
 
 
 Spline Interpolation
