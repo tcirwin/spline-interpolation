@@ -11,7 +11,7 @@
 void jacobiMethod(float* coal, float* x, float* b, int col, int num) {
     int iteration, i , j;
     float error, sigma, biggestError;
-    float temp[col];
+    float* temp = new float[col];
 
     // Iterate NUMBER_OF_ITERATIONS times,or until convergence is reached
     for (iteration = 0; iteration < NUMBER_OF_ITERATIONS; iteration++) {
@@ -49,27 +49,4 @@ void jacobiMethod(float* coal, float* x, float* b, int col, int num) {
             return;
         }
     }
-}
-
-int main() {
-    float a[] = {
-        5, -2, 3,
-        -3, 9, 1,
-        2, -1, -7
-    };
-    float x[] = {0,0,0};
-    float b[] = {-1, 2, 3};
-
-    jacobiMethod(a, x, b, 3, 9);
-
-    /*float a[] = {
-        2, 1,
-        5, 7
-    };
-    float b[] = {11,13};
-    float x[] = {1,1};
-
-    jacobiMethod(a, x, b, 2, 4);*/
-
-    return 0;
 }
