@@ -20,6 +20,8 @@ Point** finVals;
 Point** sets;
 
 void Splines::init() {
+   cout << "Enter [resolution numPoints numSets] followed by " << endl;
+   cout << "data points, one per line: ";
    cin >> resolution >> numPoints >> numSets;
 
    sets = new Point*[numSets];
