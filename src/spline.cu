@@ -42,7 +42,7 @@ static Point **m_generatePoints(Point **start, int numSets, int numPoints, int g
    int set, totFinalPoints = (numPoints - 1) * numSets * gran;
    CubicCurve *ss_d;
    Point *ans_d;
-   
+
    if (numSets != sets) {
       sets = numSets;
       free(ret);
