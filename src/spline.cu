@@ -14,6 +14,7 @@ static Point **m_generatePoints(Point **, int, int, int);
 __global__ void fillA(float *, Point *);
 __global__ void fillb(float *, Point *);
 __global__ void solveSplineCu(CubicCurve *, Point*);
+__global__ void fillCubicCurves(CubicCurve*, Point*, float*);
 
 /**
  * Checks that numSets, numPoints, and granularity are all above zero.
@@ -38,9 +39,8 @@ static Point **m_generatePoints(Point **start, int numSets, int numPoints, int g
    static Point** ret = (Point **) malloc(sets * sizeof(Point *));
    static Point* ans = (Point*) malloc((points - 1) * sets * granularity * sizeof(Point));
 
-   CubicCurve **ss;
-   int set, totFinalPoints = (numPoints - 1) * numSets * gran;
    CubicCurve *ss_d;
+   int set, totFinalPoints = (numPoints - 1) * numSets * gran;
    Point *ans_d;
 
    if (numSets != sets) {
@@ -57,17 +57,11 @@ static Point **m_generatePoints(Point **start, int numSets, int numPoints, int g
       ans = (Point*) malloc(totFinalPoints * sizeof(Point));
    }
 
-   ss = generateSplines(start, numSets, numPoints);
+   ss_d = generateSplines(start, numSets, numPoints);
 
    cudaDeviceSynchronize();
 
-   cuAlloc(ss_d, (numPoints - 1) * numSets * sizeof(CubicCurve));
    cuAlloc(ans_d, totFinalPoints * sizeof(Point));
-
-   for (set = 0; set < numSets; set++) {
-      copyToCard(&(ss_d[set * (numPoints - 1)]), ss[set], (numPoints - 1)
-       * sizeof(CubicCurve));
-   }
 
    for (set = 0; set < numSets; set++) {
       solveSplineCu<<<(numPoints - 1), gran>>>
@@ -83,11 +77,6 @@ static Point **m_generatePoints(Point **start, int numSets, int numPoints, int g
    cudaFree(ans_d);
    cudaFree(ss_d);
 
-   for (set = 0; set < numSets; set++)
-      free(ss[set]);
-
-   free(ss);
-
    return ret;
 }
 
@@ -96,11 +85,10 @@ static Point **m_generatePoints(Point **start, int numSets, int numPoints, int g
  * elements in pts should equal num. The number of splines returned is then
  * num - 1.
  */
-CubicCurve **generateSplines(Point **pts, int splines, int num) {
-   CubicCurve **ss = (CubicCurve **) malloc(splines * sizeof(CubicCurve *));
-
-   int i, j, rows = num - 2, elems = (rows * rows);
-   float *A_d, *b_d; 
+CubicCurve* generateSplines(Point **pts, int splines, int num) {
+   CubicCurve *ss_d;
+   int i, rows = num - 2, elems = (rows * rows), numCurves = num - 1;
+   float *A_d, *b_d;
    float *A = (float *) calloc(elems, sizeof(float));
    Point *pts_d;
 
@@ -108,6 +96,7 @@ CubicCurve **generateSplines(Point **pts, int splines, int num) {
    cudaMalloc((void**)&A_d, elems * sizeof(float));
    cudaMalloc((void**)&b_d, splines * rows * sizeof(float));
    cudaMalloc((void**)&pts_d, splines * num * sizeof(Point));
+   cudaMalloc((void**)&ss_d, splines * numCurves * sizeof(CubicCurve));
    cudaError_t error = cudaGetLastError();
    if (error != cudaSuccess)
       printf("spline: error mallocing on device.\n");
@@ -136,17 +125,21 @@ CubicCurve **generateSplines(Point **pts, int splines, int num) {
    // b: right-hand-side of the equations.
    // (Ax = b), where A is a matrix, and x and b are column vectors.
    fillb<<<splines, rows>>>(b_d, pts_d);
-   
+
    error = cudaGetLastError();
    if (error != cudaSuccess)
       printf("spline: error mallocing on device.\n");
 
    // Make sure fillMatrices is done.
    cudaDeviceSynchronize();
-   cudaFree(pts_d);
 
-   float *x = solveSystem(A_d, b_d, splines, rows);
+   float *x_d = solveSystem(A_d, b_d, splines, rows);
+   cudaFree(A_d);
+   cudaFree(b_d);
 
+   fillCubicCurves<<<splines, num>>>(ss_d, pts_d, x_d);
+
+   /*
    for (j = 0; j < splines; j++) {
       // Now that we have the matrix, solve for x. X then holds our Z-values
       // (the second derivative at the points).
@@ -169,16 +162,45 @@ CubicCurve **generateSplines(Point **pts, int splines, int num) {
 
       ss[j] = cc;
    }
+   */
 
-   cudaFree(A_d);
-   cudaFree(b_d);
+   cudaFree(x_d);
+   cudaFree(pts_d);
 
-   free(x);
-
-   return ss;
+   return ss_d;
 }
 
 __shared__ float h[TILE_SIZE];
+
+__global__ void fillCubicCurves(CubicCurve* ccs, Point* pts, float* x) {
+   // threadDim = numPoints
+   int numPoints = blockDim.x;
+   int numCurves = numPoints - 1;
+
+   // j = spNum = spline number
+   int spNum = blockIdx.x;
+   // i = ptNum = point number
+   int ptNum = threadIdx.x;
+
+   int rows = numPoints - 2;
+
+   // Now that we have the matrix, solve for x. X then holds our Z-values
+   // (the second derivative at the points).
+   CubicCurve *cc = ccs + (spNum * numCurves);
+
+   cc[0].z1 = 0;
+   cc[spNum - 2].z2 = 0;
+
+   // Fill CubicCurve array with Z-values and points
+   if (ptNum != 0)
+      cc[ptNum].z1 = x[spNum * rows + (ptNum - 1)];
+
+   cc[ptNum].p1 = pts[spNum * numPoints + ptNum];
+   cc[ptNum].p2 = pts[spNum * numPoints + (ptNum + 1)];
+
+   if (ptNum != rows)
+      cc[ptNum].z2 = x[spNum * rows + ptNum];
+}
 
 /**
  * Fills matrix A with coefficients of equations (where Z-values are vars)

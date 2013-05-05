@@ -14,7 +14,7 @@ typedef struct CubicCurve {
 } CubicCurve;
 
 void printSpline(CubicCurve);
-CubicCurve **generateSplines(Point **, int, int);
+CubicCurve* generateSplines(Point **, int, int);
 float solveSpline(float, CubicCurve);
 Point **generatePoints(Point **, int, int, int);
 

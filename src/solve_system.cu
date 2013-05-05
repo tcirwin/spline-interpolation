@@ -36,15 +36,9 @@ float* solveSystem(float* A_d, float* b_d, int splines, int col) {
    if (error != cudaSuccess)
       printf("error calling CUDA kernel: jacobiMethod.\n");
 
-   // Copy the current iteration's solution to host memory
-   cudaMemcpy(x, x_d, splines * col * sizeof(float), cudaMemcpyDeviceToHost);
-   error = cudaGetLastError();
-   if (error != cudaSuccess)
-      printf("error mem copying back to host.\n");
+   free(x);
 
-   cudaFree(x_d);
-
-   return x;
+   return x_d;
 }
    
 __shared__ float psum[MAT_SIZE];
