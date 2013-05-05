@@ -4,6 +4,14 @@ USAGE
 
  - Plotting Splines: `./windowtest < [data file]`
  - Write Spline Points to Console: `./splinetest < [data file]`
+
+CPU version
+-----------
+ - Plotting splines: `./windowtest_cpu < [data file]`
+ - Write Spline Points to Console: `./splinetest_cpu < [data file]`
+
+Data
+----
  - Sample data files available: `/tests/*.in`.
 
 If you're on Mac OS X...
