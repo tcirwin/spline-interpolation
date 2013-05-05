@@ -1,14 +1,16 @@
 #include "spline.h"
 #include "solve_system.h"
+#include "JacobiMethod.h"
+#include "omp.h"
 #include <iostream>
-#include <math>
-#include <stdlib>
-#include <assert>
+#include <assert.h>
+#include <stdlib.h>
 
 static Point **m_generatePoints(Point **, int, int, int);
-void fillA(float *, Point *);
-void fillb(float *, Point *);
-void solveSpline(CubicCurve *, Point*);
+static void fillA(float *, Point *, int);
+static void fillb(float *, Point *, int);
+static CubicCurve* generateSpline(Point* pts, int numPoints);
+Point* solveSpline(CubicCurve *, int, int);
 
 /**
  * Checks that numSets, numPoints, and granularity are all above zero.
@@ -29,14 +31,18 @@ Point** generatePoints(Point ** start, int numSets, int numPoints, int gran) {
 }
 
 static Point** m_generatePoints(Point** start, int numSets, int numPoints, int gran) {
-   CubicCurve** cc = (CubicCurve**) malloc(numSets * sizeof(CubicCurve**));
-   Point** pts = (Point**) malloc(numSets * sizeof(Point*));
+   CubicCurve** cc = new CubicCurve*[numSets];
+   Point** pts = new Point*[numSets];
 
+#pragma omp parallel for
    for (int i = 0; i < numSets; i++) {
       cc[i] = generateSpline(start[i], numPoints);
-      pts[i] = solveSpline(cc[i], gran);
+      pts[i] = solveSpline(cc[i], numPoints - 1, gran);
+
+      delete [] cc[i];
    }
 
+   delete [] cc;
    return pts;
 }
 
@@ -47,17 +53,17 @@ static Point** m_generatePoints(Point** start, int numSets, int numPoints, int g
  * Returns a set of CubicCurves which defines the newly generated spline.
  */
 static CubicCurve* generateSpline(Point* pts, int numPoints) {
-   CubicCurve *curve = (CubicCurve*) malloc(numPoints * sizeof(CubicCurve *));
+   CubicCurve *curve = new CubicCurve[numPoints - 1];
 
-   int i, j, rows = num - 2, elems = rows * rows;
-   float *A = (float *) calloc(elems, sizeof(float));
-   float *b = (float *) calloc(rows, sizeof(float));
-   float *x = (float *) calloc(rows, sizeof(float));
+   int i, rows = numPoints - 2, elems = rows * rows;
+   float *A = (float*) calloc(elems, sizeof(float));
+   float *b = (float*) calloc(rows, sizeof(float));
+   float *x = (float*) calloc(rows, sizeof(float));
 
    fillA(A, pts, rows);
    fillb(b, pts, rows);
 
-   jacobiMethod(A, x, b, numPoints);
+   jacobiMethod(A, x, b, rows);
 
    curve[0].z1 = 0;
    curve[numPoints - 2].z2 = 0;
@@ -65,13 +71,13 @@ static CubicCurve* generateSpline(Point* pts, int numPoints) {
    // Fill CubicCurve array with Z-values and points
    for (i = 0; i < numPoints - 1; i++) {
       if (i != 0)
-         curve[i].z1 = x[j * rows + (i - 1)];
+         curve[i].z1 = x[i - 1];
 
-      curve[i].p1 = pts[j][i];
-      curve[i].p2 = pts[j][i + 1];
+      curve[i].p1 = pts[i];
+      curve[i].p2 = pts[i + 1];
 
       if (i != numPoints - 2)
-         curve[i].z2 = x[j * rows + i];
+         curve[i].z2 = x[i];
    }
 
    free(A);
@@ -88,7 +94,7 @@ static CubicCurve* generateSpline(Point* pts, int numPoints) {
  * GridDim.x should be the number of matrices to fill.
  */
 void fillA(float* A, Point* pts, int rows) {
-   float* h = (float*) malloc(rows * sizeof(float));
+   float* h = (float*) calloc(rows, sizeof(float));
 
    for (int pos = 0; pos < rows; pos++) {
       // Initialize h values: h-sub-i is the distance between point i+1 and point
@@ -116,43 +122,44 @@ void fillA(float* A, Point* pts, int rows) {
 }
 
 void fillb(float* b, Point* pts, int rows) {
-   float* h = (float*) malloc(rows * sizeof(float));
+   float* h = (float*) calloc(rows + 1, sizeof(float));
 
-   for (int pos = 0; pos < rows; pos++) {
-      if (pos == rows - 1)
-         h[pos + 1] = pts[pos + 2].x - pts[pos + 1].x;
+   for (int pos = 0; pos < rows + 1; pos++) {
+      h[pos] = pts[pos + 1].x - pts[pos].x;
    }
 
    for (int pos = 0; pos < rows; pos++) {
-      if (pos < rows)
-         b[pos] = 6*((pts[pos + 2].y - pts[pos + 1].y) / h[pos + 1]
-          - (pts[pos + 1].y - pts[pos].y) / h[pos]);
+      b[pos] = 6*((pts[pos + 2].y - pts[pos + 1].y) / h[pos + 1]
+       - (pts[pos + 1].y - pts[pos].y) / h[pos]);
    }
+
+   free(h);
 }
 
 /**
  * Takes the cubic spline described by cc and solves it.
- * blockDim.x indicates the granularity of the answer per curve.
- * gridDim.x indicates the number of curves to solve.
- *
- * Makes blockDim.x - 1 points between each two sets of curves.
+ * Plots gran - 1 points, equally spaced, on CubicCurve cc.
  */
-__global__ void solveSplineCu(CubicCurve *cc, Point *ans) {
-   int idx = blockIdx.x * blockDim.x + threadIdx.x;
-   int cc_num = blockIdx.x;
-   int x_num = threadIdx.x;
+Point* solveSpline(CubicCurve* cc, int numSplines, int gran) {
+   Point* ans = new Point[gran * numSplines];
 
-   CubicCurve cv = cc[cc_num];
-   float h = cv.p2.x - cv.p1.x;
+   for (int sp = 0; sp < numSplines; sp++) {
+      CubicCurve cv = cc[sp];
+      float h = cv.p2.x - cv.p1.x;
 
-   float x = cv.p1.x + (h / blockDim.x) * ((float) x_num);
+      for (int idx = 0; idx < gran; idx++) {
+         float x = cv.p1.x + (h / gran) * ((float) idx);
 
-   float fx1 = x - cv.p1.x;
-   float fx2 = cv.p2.x - x;
+         float fx1 = x - cv.p1.x;
+         float fx2 = cv.p2.x - x;
 
-   ans[idx].x = x;
-   ans[idx].y = (cv.z2 / (6.0*h)) * (fx1 * fx1 * fx1)
-    + (cv.z1 / (6.0*h)) * (fx2 * fx2 * fx2)
-    + (cv.p2.y / h - (h / 6.0) * cv.z2) * fx1
-    + (cv.p1.y / h - (h / 6.0) * cv.z1) * fx2;
+         ans[sp * gran + idx].x = x;
+         ans[sp * gran + idx].y = (cv.z2 / (6.0*h)) * (fx1 * fx1 * fx1)
+          + (cv.z1 / (6.0*h)) * (fx2 * fx2 * fx2)
+          + (cv.p2.y / h - (h / 6.0) * cv.z2) * fx1
+          + (cv.p1.y / h - (h / 6.0) * cv.z1) * fx2;
+      }
+   }
+
+   return ans;
 }

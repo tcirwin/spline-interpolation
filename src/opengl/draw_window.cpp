@@ -4,15 +4,24 @@
     #include <GL/glut.h>
 #endif
 
+#include <stdlib.h>
 #include "../init_curves.h"
 #include "../process_curve.h"
+#include "../timing.h"
 
 void init();
 void display();
 
+int timing;
+
 int width = 640, height = 480;
 
 int main(int argc, char** argv) {
+   if (argc == 2)
+      timing = atoi(argv[1]);
+   else
+      timing = 0;
+
    glutInit(&argc, argv);
    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
    glutInitWindowSize(width, height);
