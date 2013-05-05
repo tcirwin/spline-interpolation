@@ -1,7 +1,9 @@
 #include <iostream>
+#include <time.h>
 #include "process_curve.h"
 #include "init_curves.h"
 #include "spline.h"
+#include "timing.h"
 
 #define BORDER 100
 
@@ -69,7 +71,16 @@ void Splines::transform(int n, int e, int s, int w) {
 }
 
 void Splines::generate() {
+   clock_t start, diff;
+
+   start = clock();
    finVals = generatePoints(sets, numSets, numPoints, resolution);
+   diff = clock() - start;
+   
+   if (timing) {
+      double sec = diff/(CLOCK_RATE_GHZ * BILLION);
+      cout << endl << "Time taken: " << sec << " seconds" << endl;
+   }
 }
 
 void Splines::iterate(
