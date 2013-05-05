@@ -137,7 +137,7 @@ CubicCurve* generateSplines(Point **pts, int splines, int num) {
    cudaFree(A_d);
    cudaFree(b_d);
 
-   fillCubicCurves<<<splines, num>>>(ss_d, pts_d, x_d);
+   fillCubicCurves<<<splines, num - 1>>>(ss_d, pts_d, x_d);
 
    /*
    for (j = 0; j < splines; j++) {
@@ -169,20 +169,20 @@ CubicCurve* generateSplines(Point **pts, int splines, int num) {
 
    return ss_d;
 }
-
+//#
 __shared__ float h[TILE_SIZE];
 
 __global__ void fillCubicCurves(CubicCurve* ccs, Point* pts, float* x) {
    // threadDim = numPoints
    int numPoints = blockDim.x;
-   int numCurves = numPoints - 1;
+   int numCurves = numPoints;
 
    // j = spNum = spline number
    int spNum = blockIdx.x;
    // i = ptNum = point number
    int ptNum = threadIdx.x;
 
-   int rows = numPoints - 2;
+   int rows = numPoints - 1;
 
    // Now that we have the matrix, solve for x. X then holds our Z-values
    // (the second derivative at the points).
@@ -195,8 +195,8 @@ __global__ void fillCubicCurves(CubicCurve* ccs, Point* pts, float* x) {
    if (ptNum != 0)
       cc[ptNum].z1 = x[spNum * rows + (ptNum - 1)];
 
-   cc[ptNum].p1 = pts[spNum * numPoints + ptNum];
-   cc[ptNum].p2 = pts[spNum * numPoints + (ptNum + 1)];
+   cc[ptNum].p1 = pts[spNum * (numPoints + 1) + ptNum];
+   cc[ptNum].p2 = pts[spNum * (numPoints + 1) + (ptNum + 1)];
 
    if (ptNum != rows)
       cc[ptNum].z2 = x[spNum * rows + ptNum];
