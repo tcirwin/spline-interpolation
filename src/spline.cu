@@ -34,7 +34,7 @@ Point** generatePoints(Point ** start, int numSets, int numPoints, int gran) {
    }
 }
 
-static Point **m_generatePoints(Point **start, int numSets, int numPoints, int gran) {
+static Point** m_generatePoints(Point **start, int numSets, int numPoints, int gran) {
    static int sets = 1, granularity = 1, points = 2;
    static Point** ret = (Point **) malloc(sets * sizeof(Point *));
    static Point* ans = (Point*) malloc((points - 1) * sets * granularity * sizeof(Point));
@@ -138,31 +138,6 @@ CubicCurve* generateSplines(Point **pts, int splines, int num) {
    cudaFree(b_d);
 
    fillCubicCurves<<<splines, num - 1>>>(ss_d, pts_d, x_d);
-
-   /*
-   for (j = 0; j < splines; j++) {
-      // Now that we have the matrix, solve for x. X then holds our Z-values
-      // (the second derivative at the points).
-      CubicCurve *cc = (CubicCurve *) malloc((num - 1) * sizeof(CubicCurve));
-
-      cc[0].z1 = 0;
-      cc[num - 2].z2 = 0;
-
-      // Fill CubicCurve array with Z-values and points
-      for (i = 0; i < num - 1; i++) {
-         if (i != 0)
-            cc[i].z1 = x[j * rows + (i - 1)];
-
-         cc[i].p1 = pts[j][i];
-         cc[i].p2 = pts[j][i + 1];
-
-         if (i != num - 2)
-            cc[i].z2 = x[j * rows + i];
-      }
-
-      ss[j] = cc;
-   }
-   */
 
    cudaFree(x_d);
    cudaFree(pts_d);
