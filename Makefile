@@ -1,9 +1,9 @@
 NVCC = nvcc
-NVCCFLAGS = -m64
-LINKFLAGS = -m64
+NVCCFLAGS = -m64 -O3 -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35
+LINKFLAGS = -m64 -O3
 
 GCC = g++
-GCCFLAGS = -g -Wall -pedantic -m64
+GCCFLAGS = -g -O3 -Wall -pedantic -m64
 
 IN_DIR = src
 OUT_DIR = bin
