@@ -78,8 +78,13 @@ void Splines::generate() {
    diff = clock() - start;
    
    if (timing) {
-      double sec = diff/(CLOCK_RATE_GHZ * BILLION);
+      double sec, ms;
+      
+      //Uses CLOCKS_PER_SEC to determine the system's clock rate
+      sec = diff/((double)CLOCKS_PER_SEC);
+      ms = diff/(CLOCKS_PER_SEC / 1000);
       cout << endl << "Time taken: " << sec << " seconds" << endl;
+      cout << "Time taken: " << ms << " miliseconds" << endl;
    }
 }
 
