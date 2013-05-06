@@ -34,6 +34,12 @@ static Point** m_generatePoints(Point** start, int numSets, int numPoints, int g
    CubicCurve** cc = new CubicCurve*[numSets];
    Point** pts = new Point*[numSets];
 
+   if (getenv("OMP_NUM_THREADS") != NULL) {
+      std::cout << std::endl << "Turning off dynamic thread count. Num threads set to "
+           << getenv("OMP_NUM_THREADS") << std::endl;
+      omp_set_dynamic(0);
+   }
+
 #pragma omp parallel for
    for (int i = 0; i < numSets; i++) {
       cc[i] = generateSpline(start[i], numPoints);
