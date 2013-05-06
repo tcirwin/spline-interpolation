@@ -87,14 +87,8 @@ void Splines::generate() {
       //double sec, ms;
       double delta;
       
-      //Uses CLOCKS_PER_SEC to determine the system's clock rate
-      //sec = diff/((double)CLOCKS_PER_SEC);
-      //ms = diff/(CLOCKS_PER_SEC / 1000);
       delta = ((end.tv_sec  - star.tv_sec) * 1000000u + end.tv_usec - star.tv_usec) / 1.e6;
-      //cout << endl << "Time taken: " << sec << " seconds" << endl;
-      //cout << "Time taken: " << ms << " miliseconds" << endl;
-      //cout << endl << "Seconds" << (end.tv_sec  - star.tv_sec) << " usec " << (end.tv_usec - star.tv_usec);
-      cout << endl << "New Timing Results: " << delta << "seconds." << endl;
+      cout << endl << "New Timing Results: " << delta << " seconds." << endl;
    }
 }
 
