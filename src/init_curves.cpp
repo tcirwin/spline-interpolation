@@ -1,5 +1,6 @@
 #include <iostream>
 #include <time.h>
+#include <sys/time.h>
 #include "process_curve.h"
 #include "init_curves.h"
 #include "spline.h"
@@ -73,20 +74,27 @@ void Splines::transform(int n, int e, int s, int w) {
 }
 
 void Splines::generate() {
-   clock_t start, diff;
+   //clock_t start, diff;
+   struct timeval star, end;
 
-   start = clock();
+   //start = clock();
+   gettimeofday(&star, NULL);
    finVals = generatePoints(sets, numSets, numPoints, resolution);
-   diff = clock() - start;
+   gettimeofday(&end, NULL);
+   //diff = clock() - start;
    
    if (timing) {
-      double sec, ms;
+      //double sec, ms;
+      double delta;
       
       //Uses CLOCKS_PER_SEC to determine the system's clock rate
-      sec = diff/((double)CLOCKS_PER_SEC);
-      ms = diff/(CLOCKS_PER_SEC / 1000);
-      cout << endl << "Time taken: " << sec << " seconds" << endl;
-      cout << "Time taken: " << ms << " miliseconds" << endl;
+      //sec = diff/((double)CLOCKS_PER_SEC);
+      //ms = diff/(CLOCKS_PER_SEC / 1000);
+      delta = ((end.tv_sec  - star.tv_sec) * 1000000u + end.tv_usec - star.tv_usec) / 1.e6;
+      //cout << endl << "Time taken: " << sec << " seconds" << endl;
+      //cout << "Time taken: " << ms << " miliseconds" << endl;
+      //cout << endl << "Seconds" << (end.tv_sec  - star.tv_sec) << " usec " << (end.tv_usec - star.tv_usec);
+      cout << endl << "New Timing Results: " << delta << "seconds." << endl;
    }
 }
 
