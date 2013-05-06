@@ -4,6 +4,7 @@
 #define TILE_SIZE 400
 #define MAT_SIZE 400
 #define MAXERR 1e-2
+#define MAX_GRID_SIZE 65535
 
 #define checkCudaError(x) {\
    error = cudaGetLastError();\
@@ -13,7 +14,7 @@
    }\
 }
 
-#define printError(x) printf(x " %s\n", cudaGetErrorString(error))
+#define printError(x) printf(x " #%d, %s\n", error, cudaGetErrorString(error))
 
 float *solveSystem(float *, float *, int, int);
 

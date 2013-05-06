@@ -87,7 +87,7 @@ static Point** m_generatePoints(Point **start, int numSets, int numPoints, int g
  */
 CubicCurve* generateSplines(Point **pts, int splines, int num) {
    CubicCurve *ss_d;
-   int i, rows = num - 2, elems = (rows * rows), numCurves = num - 1;
+   int rows = num - 2, elems = (rows * rows), numCurves = num - 1;
    float *A_d, *b_d;
    float *A = (float *) calloc(elems, sizeof(float));
    cudaError_t error;
@@ -121,9 +121,12 @@ CubicCurve* generateSplines(Point **pts, int splines, int num) {
    // A: coefficients of z-values in equations. Each row of matrix is one eqn.
    // b: right-hand-side of the equations.
    // (Ax = b), where A is a matrix, and x and b are column vectors.
-   fillb<<<splines, rows>>>(b_d, pts_d);
-
-   checkCudaError("spline.cu: error filling b vector:");
+   for (int i = 0; i <= splines / MAX_GRID_SIZE; i++) {
+      int nBlks = i * MAX_GRID_SIZE;
+      int blocks = (i == splines / MAX_GRID_SIZE) ? splines % MAX_GRID_SIZE : MAX_GRID_SIZE;
+      fillb<<<blocks, rows>>>(&b_d[nBlks * rows], &pts_d[nBlks * rows]);
+      checkCudaError("spline.cu: error filling b vector:");
+   }
 
    // Make sure fillMatrices is done.
    cudaDeviceSynchronize();
@@ -132,9 +135,12 @@ CubicCurve* generateSplines(Point **pts, int splines, int num) {
    cudaFree(A_d);
    cudaFree(b_d);
 
-   fillCubicCurves<<<splines, num - 1>>>(ss_d, pts_d, x_d);
-
-   checkCudaError("spline.cu: error filling cubic curves:");
+   for (int i = 0; i <= splines / MAX_GRID_SIZE; i++) {
+      int nBlks = i * MAX_GRID_SIZE;
+      int blocks = (i == splines / MAX_GRID_SIZE) ? splines % MAX_GRID_SIZE : MAX_GRID_SIZE;
+      fillCubicCurves<<<blocks, num - 1>>>(&ss_d[nBlks * (num - 1)], &pts_d[nBlks * num], &x_d[nBlks * (num - 2)]);
+      checkCudaError("spline.cu: error filling cubic curves:");
+   }
 
    cudaFree(x_d);
    cudaFree(pts_d);

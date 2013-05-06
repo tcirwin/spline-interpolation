@@ -28,8 +28,12 @@ float* solveSystem(float* A_d, float* b_d, int splines, int col) {
    checkCudaError("solve_system.cu: error mem copying to device:");
 
    // Run all iters of the jacobi method.
-   jacobiMethod<<<splines, col>>>(A_d, x_d, b_d, col, numA);
-   checkCudaError("solve_system.cu: error calling CUDA kernel:");
+   for (int i = 0; i <= splines / MAX_GRID_SIZE; i++) {
+      int numBlocks = i * MAX_GRID_SIZE;
+      int blocks = (i == splines / MAX_GRID_SIZE) ? splines % MAX_GRID_SIZE : MAX_GRID_SIZE;
+      jacobiMethod<<<blocks, col>>>(&A_d[numBlocks * numA], &x_d[numBlocks * col], &b_d[numBlocks * col], col, numA);
+      checkCudaError("solve_system.cu: error calling CUDA kernel:");
+   }
 
    free(x);
 
