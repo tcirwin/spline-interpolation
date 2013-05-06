@@ -19,6 +19,7 @@ float hix = -10000.0, lox = 10000.0, hiy = -10000.0, loy = 10000.0;
 float normx = 1, normy = 1;
 
 Point** finVals;
+Point* setLin;
 Point** sets;
 
 void Splines::init() {
@@ -26,10 +27,11 @@ void Splines::init() {
    cout << "data points, one per line: ";
    cin >> resolution >> numPoints >> numSets;
 
+   setLin = new Point[numSets * numPoints];
    sets = new Point*[numSets];
 
    for (int set = 0; set < numSets; set++) {
-      sets[set] = new Point[numPoints];
+      sets[set] = &setLin[set * numPoints];
 
       for (int point = 0; point < numPoints; point++) {
          float x, y;
