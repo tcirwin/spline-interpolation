@@ -7,8 +7,8 @@
 #include <assert.h>
 
 #define cuAlloc(x, y) cudaMalloc((void**)&(x), (y))
-#define copyToCard(x, y, z) cudaMemcpy((x), (y), (z), cudaMemcpyHostToDevice);
-#define copyToHost(x, y, z) cudaMemcpy((x), (y), (z), cudaMemcpyDeviceToHost);
+#define copyToCard(x, y, z) cudaMemcpy((x), (y), (z), cudaMemcpyHostToDevice)
+#define copyToHost(x, y, z) cudaMemcpy((x), (y), (z), cudaMemcpyDeviceToHost)
 
 static Point **m_generatePoints(Point **, int, int, int);
 __global__ void fillA(float *, Point *);
@@ -90,35 +90,32 @@ CubicCurve* generateSplines(Point **pts, int splines, int num) {
    int i, rows = num - 2, elems = (rows * rows), numCurves = num - 1;
    float *A_d, *b_d;
    float *A = (float *) calloc(elems, sizeof(float));
+   cudaError_t error;
    Point *pts_d;
 
    // Malloc on the card: Ax = b
    cudaMalloc((void**)&A_d, elems * sizeof(float));
+   checkCudaError("spline: error mallocing on device:");
    cudaMalloc((void**)&b_d, splines * rows * sizeof(float));
+   checkCudaError("spline: error mallocing on device:");
    cudaMalloc((void**)&pts_d, splines * num * sizeof(Point));
+   checkCudaError("spline: error mallocing on device:");
    cudaMalloc((void**)&ss_d, splines * numCurves * sizeof(CubicCurve));
-   cudaError_t error = cudaGetLastError();
-   if (error != cudaSuccess)
-      printf("spline: error mallocing on device.\n");
+   checkCudaError("spline: error mallocing on device:");
 
    // Copies A to A_d: ensures the CUDA buffer is initially set to 0's 
    cudaMemcpy(A_d, A, elems * sizeof(float), cudaMemcpyHostToDevice);
    free(A);
 
-   for (i = 0; i < splines; i++) {
-      // Copy point data to card.
-      cudaMemcpy(&(pts_d[i * num]), pts[i], num * sizeof(Point), cudaMemcpyHostToDevice);
-   }
+   // Copy point data to card.
+   cudaMemcpy(pts_d, pts[0], num * splines * sizeof(Point),
+      cudaMemcpyHostToDevice);
 
-   error = cudaGetLastError();
-   if (error != cudaSuccess)
-      printf("spline: error mallocing on device.\n");
+   checkCudaError("spline.cu: error memcpying to device:");
 
    fillA<<<1, rows>>>(A_d, pts_d);
 
-   error = cudaGetLastError();
-   if (error != cudaSuccess)
-      printf("spline: error mallocing on device.\n");
+   checkCudaError("spline.cu: error filling A matrix:");
 
    // Perform computation to fill A_d and b_d. 
    // A: coefficients of z-values in equations. Each row of matrix is one eqn.
@@ -126,9 +123,7 @@ CubicCurve* generateSplines(Point **pts, int splines, int num) {
    // (Ax = b), where A is a matrix, and x and b are column vectors.
    fillb<<<splines, rows>>>(b_d, pts_d);
 
-   error = cudaGetLastError();
-   if (error != cudaSuccess)
-      printf("spline: error mallocing on device.\n");
+   checkCudaError("spline.cu: error filling b vector:");
 
    // Make sure fillMatrices is done.
    cudaDeviceSynchronize();
@@ -139,12 +134,14 @@ CubicCurve* generateSplines(Point **pts, int splines, int num) {
 
    fillCubicCurves<<<splines, num - 1>>>(ss_d, pts_d, x_d);
 
+   checkCudaError("spline.cu: error filling cubic curves:");
+
    cudaFree(x_d);
    cudaFree(pts_d);
 
    return ss_d;
 }
-//#
+
 __shared__ float h[TILE_SIZE];
 
 __global__ void fillCubicCurves(CubicCurve* ccs, Point* pts, float* x) {

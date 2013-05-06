@@ -17,24 +17,19 @@ __global__ void jacobiMethod(float* coal, float* x, float* b, int col, int num);
 float* solveSystem(float* A_d, float* b_d, int splines, int col) {
    float *x_d, *x = (float *) calloc(splines * col, sizeof(float));
    int numA = col * col;
+   cudaError_t error;
 
    // Malloc space on the card.
    cudaMalloc((void**)&x_d, splines * col * sizeof(float));
-   cudaError_t error = cudaGetLastError();
-   if (error != cudaSuccess)
-      printf("error mallocing on device. %d\n", error);
+   checkCudaError("solve_system.cu: error mallocing on device:");
 
    // Copy the initial guess x onto the card.
    cudaMemcpy(x_d, x, splines * col * sizeof(float), cudaMemcpyHostToDevice);
-   error = cudaGetLastError();
-   if (error != cudaSuccess)
-      printf("error mem copying to device.\n");
+   checkCudaError("solve_system.cu: error mem copying to device:");
 
    // Run all iters of the jacobi method.
    jacobiMethod<<<splines, col>>>(A_d, x_d, b_d, col, numA);
-   error = cudaGetLastError();
-   if (error != cudaSuccess)
-      printf("error calling CUDA kernel: jacobiMethod.\n");
+   checkCudaError("solve_system.cu: error calling CUDA kernel:");
 
    free(x);
 
